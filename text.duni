@@ -1,0 +1,3 @@
+fun daniel() {
+  print "hello world";
+}
