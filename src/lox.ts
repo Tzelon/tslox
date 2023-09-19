@@ -56,11 +56,11 @@ function run(source: string) {
   const tokens = scanner.scan_tokens();
 
   const parser = new Parser(tokens);
-  const expression = parser.parse();
+  const statements = parser.parse();
 
-  if (had_error || expression === null) return;
+  if (had_error || statements === null) return;
 
-  interpreter.interpret(expression);
+  interpreter.interpret(statements);
 }
 
 export function error(line: Token | number, message: string) {

@@ -15,6 +15,11 @@ function main() {
     "Literal - value: any",
     "Unary - operator: Token, right: Expr"
   ]);
+
+  define_ast(output_dir, "Stmt", [
+    "Expression - expression: Expr",
+    "Print - expression: Expr",
+  ])
 }
 
 
@@ -22,7 +27,11 @@ function define_ast(output_dir: string, base_name: string, types: string[]) {
 
   const path = output_dir + "/" + base_name + ".ts";
   const code: string[] = []
-  code.push(`import type { Token } from "../src/token";\n\n`)
+  if (base_name === "Expr") {
+    code.push(`import type { Token } from "../src/token";\n\n`)
+  } else if (base_name === "Stmt") {
+    code.push(`import type { Expr } from "../src/Expr";\n\n`)
+  }
 
   define_visitor_interface(code, base_name, types);
 
