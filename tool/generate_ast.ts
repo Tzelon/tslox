@@ -13,12 +13,16 @@ function main() {
     "Binary - left: Expr, operator: Token, right: Expr",
     "Grouping - expression: Expr",
     "Literal - value: any",
-    "Unary - operator: Token, right: Expr"
+    "Unary - operator: Token, right: Expr",
+    "Variable - name: Token",
+    "Assign - name: Token, value: Expr",
   ]);
 
   define_ast(output_dir, "Stmt", [
+    "Block - statements: Stmt[]",
     "Expression - expression: Expr",
     "Print - expression: Expr",
+    "Var - name: Token, initializer: Expr",
   ])
 }
 
@@ -27,9 +31,9 @@ function define_ast(output_dir: string, base_name: string, types: string[]) {
 
   const path = output_dir + "/" + base_name + ".ts";
   const code: string[] = []
-  if (base_name === "Expr") {
-    code.push(`import type { Token } from "../src/token";\n\n`)
-  } else if (base_name === "Stmt") {
+  code.push(`import type { Token } from "../src/token";\n\n`)
+
+  if (base_name === "Stmt") {
     code.push(`import type { Expr } from "../src/Expr";\n\n`)
   }
 

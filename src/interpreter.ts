@@ -1,11 +1,14 @@
 import * as Lox from "./lox"
-import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor } from "./Expr";
-import { Expression, Print, Stmt, Visitor as StmtVisitor } from "./Stmt"
+import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign } from "./Expr";
+import { Block, Expression, Print, Stmt, Visitor as StmtVisitor, Var } from "./Stmt"
 import { RuntimeError } from "./RuntimeError";
 import { Token } from "./token";
 import { TokenType } from "./token_type";
+import { Environment } from "./environment";
 
 export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
+
+  private environment = new Environment();
 
   interpret(statements: Stmt[]): void {
     try {
@@ -90,6 +93,17 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
     return null;
   }
 
+  visitVariableExpr(expr: Variable) {
+    return this.environment.get(expr.name);
+  }
+
+  visitAssignExpr(expr: Assign) {
+    const value = this.evaluate(expr.value);
+
+    this.environment.assign(expr.name, value);
+    return value;
+  }
+
   visitExpressionStmt(stmt: Expression): void {
     this.evaluate(stmt.expression);
     return undefined
@@ -100,6 +114,21 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
     console.log(this.stringify(value));
 
     return undefined;
+  }
+
+  visitVarStmt(stmt: Var): void {
+    let value = null;
+    if (stmt.initializer !== null) {
+      value = this.evaluate(stmt.initializer);
+    }
+    this.environment.define(stmt.name.lexeme, value)
+
+    return undefined;
+  }
+
+  visitBlockStmt(stmt: Block): void {
+    this.execute_block(stmt.statements, new Environment(this.environment))
+    return null
   }
 
   private assert_number_operand(operator: Token, operand: unknown) {
@@ -133,6 +162,18 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
 
   private evaluate(expr: Expr) {
     return expr.accept(this)
+  }
+
+  private execute_block(statements: Stmt[], environment: Environment) {
+    const previous = this.environment;
+    try {
+      this.environment = environment;
+      for (const statement of statements) {
+        this.execute(statement)
+      }
+    } finally {
+      this.environment = previous;
+    }
   }
 
   private execute(stmt: Stmt) {
