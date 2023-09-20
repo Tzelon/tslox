@@ -5,6 +5,7 @@ import type { Expr } from "../src/Expr";
 export interface Visitor<R> {
    visitBlockStmt(stmt: Block): R;
    visitExpressionStmt(stmt: Expression): R;
+   visitIfStmt(stmt: If): R;
    visitPrintStmt(stmt: Print): R;
    visitVarStmt(stmt: Var): R;
 }
@@ -14,8 +15,8 @@ export abstract class Stmt {
 }
 
 export class Block extends Stmt {
-   constructor(public statements: Stmt[],) {
-      super()
+   constructor(public statements: Stmt[], ) {
+     super()
    }
 
    accept<R>(visitor: Visitor<R>) {
@@ -24,8 +25,8 @@ export class Block extends Stmt {
 }
 
 export class Expression extends Stmt {
-   constructor(public expression: Expr,) {
-      super()
+   constructor(public expression: Expr, ) {
+     super()
    }
 
    accept<R>(visitor: Visitor<R>) {
@@ -33,9 +34,19 @@ export class Expression extends Stmt {
    }
 }
 
+export class If extends Stmt {
+   constructor(public condition: Expr, public thenBranch: Stmt, public elseBranch?: Stmt, ) {
+     super()
+   }
+
+   accept<R>(visitor: Visitor<R>) {
+      return visitor.visitIfStmt(this);
+   }
+}
+
 export class Print extends Stmt {
-   constructor(public expression: Expr,) {
-      super()
+   constructor(public expression: Expr, ) {
+     super()
    }
 
    accept<R>(visitor: Visitor<R>) {
@@ -44,8 +55,8 @@ export class Print extends Stmt {
 }
 
 export class Var extends Stmt {
-   constructor(public name: Token, public initializer: Expr,) {
-      super()
+   constructor(public name: Token, public initializer: Expr, ) {
+     super()
    }
 
    accept<R>(visitor: Visitor<R>) {

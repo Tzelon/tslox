@@ -1,6 +1,6 @@
 import * as Lox from "./lox"
-import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign } from "./Expr";
-import { Block, Expression, Print, Stmt, Visitor as StmtVisitor, Var } from "./Stmt"
+import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical } from "./Expr";
+import { Block, Expression, If, Print, Stmt, Visitor as StmtVisitor, Var } from "./Stmt"
 import { RuntimeError } from "./RuntimeError";
 import { Token } from "./token";
 import { TokenType } from "./token_type";
@@ -35,7 +35,7 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
 
     switch (expr.operator.type) {
       case TokenType.BANG:
-        return !this.it_truthy(right);
+        return !this.is_truthy(right);
       case TokenType.MINUS:
         this.assert_number_operand(expr.operator, right)
         return -Number(right)
@@ -131,6 +131,28 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
     return null
   }
 
+  visitIfStmt(stmt: If): void {
+    if (this.is_truthy(this.evaluate(stmt.condition))) {
+      this.execute(stmt.thenBranch)
+    } else if (stmt.elseBranch !== undefined || stmt.elseBranch !== null) {
+      this.execute(stmt.elseBranch)
+    }
+
+    return null
+  }
+
+  visitLogicalExpr(expr: Logical) {
+    const left = this.evaluate(expr.left);
+
+    if (expr.operator.type === TokenType.OR) {
+      if (this.is_truthy(left)) return left;
+    } else {
+      if (!this.is_truthy(left)) return left;
+    }
+
+    return this.evaluate(expr.right);
+  }
+
   private assert_number_operand(operator: Token, operand: unknown) {
     if (typeof operand === "number") return;
     throw new RuntimeError(operator, "Operand must be a number.")
@@ -153,7 +175,7 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
   }
 
   // null, undefined and false are falsey anything else are turthy
-  private it_truthy(object: any) {
+  private is_truthy(object: any) {
     if (object === null || object === undefined) return false;
     if (object instanceof Boolean) return Boolean(object);
 
