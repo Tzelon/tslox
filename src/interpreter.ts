@@ -1,6 +1,6 @@
 import * as Lox from "./lox"
 import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical } from "./Expr";
-import { Block, Expression, If, Print, Stmt, Visitor as StmtVisitor, Var } from "./Stmt"
+import { Block, Expression, If, Print, Stmt, Visitor as StmtVisitor, Var, While } from "./Stmt"
 import { RuntimeError } from "./RuntimeError";
 import { Token } from "./token";
 import { TokenType } from "./token_type";
@@ -153,6 +153,14 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
     return this.evaluate(expr.right);
   }
 
+  visitWhileStmt(stmt: While): void {
+    while (this.is_truthy(this.evaluate(stmt.condition))) {
+      this.execute(stmt.body)
+    }
+
+    return null
+  }
+
   private assert_number_operand(operator: Token, operand: unknown) {
     if (typeof operand === "number") return;
     throw new RuntimeError(operator, "Operand must be a number.")
@@ -177,7 +185,7 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
   // null, undefined and false are falsey anything else are turthy
   private is_truthy(object: any) {
     if (object === null || object === undefined) return false;
-    if (object instanceof Boolean) return Boolean(object);
+    if (typeof object === "boolean") return Boolean(object);
 
     return true;
   }

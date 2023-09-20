@@ -1,5 +1,5 @@
 import type { Token } from "./token";
-import { Block, Expression, If, Print, Stmt, Var } from "./Stmt";
+import { Block, Expression, If, Print, Stmt, Var, While } from "./Stmt";
 import * as Lox from "./lox";
 import { Assign, Binary, Expr, Grouping, Literal, Logical, Unary, Variable } from "./Expr";
 import { TokenType } from "./token_type";
@@ -47,8 +47,10 @@ export class Parser {
   }
 
   private statement(): Stmt {
+    if (this.match(TokenType.FOR)) return this.for_statement();
     if (this.match(TokenType.IF)) return this.if_statement();
     if (this.match(TokenType.PRINT)) return this.print_statement();
+    if (this.match(TokenType.WHILE)) return this.while_statement();
     if (this.match(TokenType.LEFT_BRACE)) return new Block(this.block());
 
     return this.expression_statement();
@@ -83,6 +85,63 @@ export class Parser {
     const value = this.expression();
     this.consume(TokenType.SEMICOLON, "Expect ';' after value.");
     return new Print(value);
+  }
+
+  private for_statement(): Stmt {
+    this.consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'.")
+
+    let initializer: Stmt = null;
+    if (this.match(TokenType.SEMICOLON)) {
+      initializer = null;
+    } else if (this.match(TokenType.VAR)) {
+      initializer = this.var_declaration();
+    } else {
+      initializer = this.expression_statement();
+    }
+
+    let condition: Expr = null;
+    if (!this.check(TokenType.SEMICOLON)) {
+      condition = this.expression();
+    }
+
+    this.consume(TokenType.SEMICOLON, "Expect ';' after loop condition.")
+
+    let increment: Expr = null;
+    if (!this.check(TokenType.RIGHT_PAREN)) {
+      increment = this.expression();
+    }
+
+    this.consume(TokenType.RIGHT_PAREN, "Expect ')' after for clauses.");
+    let body = this.statement();
+
+    //desugraing for loop to while loop
+    // working backward from increment
+
+    if (increment !== null) {
+      body = new Block([body, new Expression(increment)])
+    }
+
+    if (condition == null) {
+      condition = new Literal(true)
+    }
+
+    body = new While(condition, body)
+
+    if (initializer !== null) {
+      body = new Block([initializer, body])
+    }
+
+    return body;
+  }
+
+  private while_statement(): Stmt {
+    this.consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'.")
+    const condition = this.expression();
+    this.consume(TokenType.RIGHT_PAREN, "Expect ')' after condition.")
+
+    const body = this.statement();
+
+    return new While(condition, body);
   }
 
   private expression_statement(): Stmt {
