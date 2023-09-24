@@ -204,7 +204,9 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
   }
 
   visitFunctionStmt(stmt: Function): void {
-    const func = new LoxFunction(stmt);
+    //passing the environment that is active when the function is declared.
+    // NOT when it's called
+    const func = new LoxFunction(stmt, this.environment);
     this.environment.define(stmt.name.lexeme, func)
 
     return null;

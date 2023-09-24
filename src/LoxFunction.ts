@@ -6,9 +6,12 @@ import { Interpreter } from "./interpreter";
 
 export class LoxFunction extends Callable {
   declaration: Function;
-  constructor(declaration: Function) {
+  closure: Environment;
+
+  constructor(declaration: Function, closure: Environment) {
     super();
     this.declaration = declaration;
+    this.closure = closure;
   }
 
   arity(): number {
@@ -16,7 +19,7 @@ export class LoxFunction extends Callable {
   }
 
   call(interpreter: Interpreter, args: unknown[]): unknown {
-    const environment = new Environment(interpreter.globals);
+    const environment = new Environment(this.closure);
 
     for (let index = 0; index < this.declaration.params.length; index++) {
       environment.define(this.declaration.params.at(index).lexeme, args.at(index));
