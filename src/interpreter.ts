@@ -1,14 +1,33 @@
 import * as Lox from "./lox"
-import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical } from "./Expr";
-import { Block, Expression, If, Print, Stmt, Visitor as StmtVisitor, Var, While } from "./Stmt"
+import { Callable } from "./Callable"
+import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical, Call } from "./Expr";
+import { Block, Expression, Function, If, Print, Stmt, Visitor as StmtVisitor, Var, While } from "./Stmt"
 import { RuntimeError } from "./RuntimeError";
 import { Token } from "./token";
 import { TokenType } from "./token_type";
 import { Environment } from "./environment";
+import { LoxFunction } from "./LoxFunction";
 
 export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
 
-  private environment = new Environment();
+  globals = new Environment();
+  private environment = this.globals;
+
+  constructor() {
+    this.globals.define("clock", new class extends Callable {
+      arity(): number {
+        return 0;
+      }
+
+      call(_interpreter: Interpreter, _args: unknown[]): unknown {
+        return Date.now() / 1000;
+      }
+
+      toString() {
+        return "<native fn>"
+      }
+    })
+  }
 
   interpret(statements: Stmt[]): void {
     try {
@@ -104,6 +123,27 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
     return value;
   }
 
+  visitCallExpr(expr: Call) {
+    const callee = this.evaluate(expr.callee);
+
+    const args: any[] = [];
+    for (const arg of expr.args) {
+      args.push(this.evaluate(arg));
+    }
+
+
+    if (!(callee instanceof Callable)) {
+      throw new RuntimeError(expr.paren, "Can only call functions and classes.")
+    }
+
+    const func = callee as Callable;
+
+    if (args.length !== func.arity()) {
+      throw new RuntimeError(expr.paren, "Expected " + func.arity() + " arguments but got " + args.length + ".");
+    }
+    return func.call(this, args);
+  }
+
   visitExpressionStmt(stmt: Expression): void {
     this.evaluate(stmt.expression);
     return undefined
@@ -161,6 +201,13 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
     return null
   }
 
+  visitFunctionStmt(stmt: Function): void {
+    const func = new LoxFunction(stmt);
+    this.environment.define(stmt.name.lexeme, func)
+
+    return null;
+  }
+
   private assert_number_operand(operator: Token, operand: unknown) {
     if (typeof operand === "number") return;
     throw new RuntimeError(operator, "Operand must be a number.")
@@ -194,7 +241,7 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
     return expr.accept(this)
   }
 
-  private execute_block(statements: Stmt[], environment: Environment) {
+  execute_block(statements: Stmt[], environment: Environment) {
     const previous = this.environment;
     try {
       this.environment = environment;

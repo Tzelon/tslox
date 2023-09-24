@@ -69,7 +69,7 @@ export function error(line: Token | number, message: string) {
   } else if (line.type === TokenType.EOF) {
     report(line.literal, " at end", message)
   } else {
-    report(line.literal, ` at '${line.lexeme}'`, message)
+    report(line.line, ` at '${line.lexeme}'`, message)
   }
 }
 

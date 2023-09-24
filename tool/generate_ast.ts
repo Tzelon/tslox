@@ -11,6 +11,7 @@ function main() {
   const output_dir = argv[2];
   define_ast(output_dir, "Expr", [
     "Binary - left: Expr, operator: Token, right: Expr",
+    "Call - callee: Expr, paren: Token, args: Expr[]",
     "Grouping - expression: Expr",
     "Literal - value: any",
     "Logical - left: Expr, operator: Token, right: Expr",
@@ -22,6 +23,7 @@ function main() {
   define_ast(output_dir, "Stmt", [
     "Block - statements: Stmt[]",
     "Expression - expression: Expr",
+    "Function - name: Token, params: Token[], body: Stmt[]",
     "If - condition: Expr, thenBranch: Stmt, elseBranch?: Stmt",
     "Print - expression: Expr",
     "Var - name: Token, initializer: Expr",

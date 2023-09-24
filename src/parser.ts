@@ -1,7 +1,7 @@
 import type { Token } from "./token";
-import { Block, Expression, If, Print, Stmt, Var, While } from "./Stmt";
+import { Block, Expression, Function, If, Print, Stmt, Var, While } from "./Stmt";
 import * as Lox from "./lox";
-import { Assign, Binary, Expr, Grouping, Literal, Logical, Unary, Variable } from "./Expr";
+import { Assign, Binary, Call, Expr, Grouping, Literal, Logical, Unary, Variable } from "./Expr";
 import { TokenType } from "./token_type";
 
 export class Parser {
@@ -23,6 +23,7 @@ export class Parser {
 
   private declaration(): Stmt {
     try {
+      if (this.match(TokenType.FUN)) return this.fun("function");
       if (this.match(TokenType.VAR)) return this.var_declaration();
 
       return this.statement();
@@ -32,6 +33,30 @@ export class Parser {
         return null
       }
     }
+  }
+
+  private fun(kind: string) {
+    const name = this.consume(TokenType.IDENTIFIER, "Expect " + kind + " name.");
+
+    this.consume(TokenType.LEFT_PAREN, "Expect '(' after function name")
+    let params: Token[] = [];
+    if (!this.check(TokenType.RIGHT_PAREN)) {
+      do {
+        if (params.length >= 255) {
+          this.error(this.peek(), "Cannot have more than 255 parameters.");
+        }
+        params.push(this.consume(TokenType.IDENTIFIER, "Expect parameters name."));
+
+      } while (this.match(TokenType.COMMA))
+    }
+
+
+    this.consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.");
+
+    this.consume(TokenType.LEFT_BRACE, "Expect '{' before " + kind + " body.");
+    const body = this.block();
+
+    return new Function(name, params, body);
   }
 
   private var_declaration() {
@@ -251,7 +276,20 @@ export class Parser {
       return new Unary(operator, right);
     }
 
-    return this.primary();
+    return this.call();
+  }
+
+  private call(): Expr {
+    let expr = this.primary();
+    while (true) {
+      if (this.match(TokenType.LEFT_PAREN)) {
+        expr = this.finish_call(expr)
+      } else {
+        break;
+      }
+    }
+
+    return expr;
   }
 
   private primary(): Expr {
@@ -278,6 +316,11 @@ export class Parser {
 
 
   //====== UTILS =====
+  /**
+   * **advance** until a token is not equal to the given token sequence.
+   * return `true` if the squence of tokens are equal.
+   * Else return `false`.
+   */
   private match(...types: TokenType[]) {
     for (const type of types) {
       if (this.check(type)) {
@@ -289,11 +332,17 @@ export class Parser {
     return false;
   }
 
+  /*
+   * return `true` if the given token is equal to the current one.
+   */
   private check(type: TokenType) {
     if (this.is_at_end()) return false;
     return this.peek().type === type;
   }
 
+  /*
+   * **advance** and return the last token;
+   */
   private advance() {
     if (!this.is_at_end()) this.current++;
     return this.previous();
@@ -303,6 +352,10 @@ export class Parser {
     return this.peek().type === TokenType.EOF;
   }
 
+  /*
+   * return the current token in the sequence.
+   * without **advancing**
+   */
   private peek() {
     const item = this.tokens.at(this.current);
     if (item === undefined) {
@@ -311,12 +364,32 @@ export class Parser {
     return item;
   }
 
+  /*
+   * return the previous token in the sequence.
+   */
   private previous() {
     const item = this.tokens.at(this.current - 1);
     if (item === undefined) {
       throw new Error("IndexOutOfBoundsException");
     }
     return item;
+  }
+
+  private finish_call(callee: Expr): Expr {
+    const args: Expr[] = []
+
+    if (!this.check(TokenType.RIGHT_PAREN)) {
+      do {
+        if (args.length >= 255) {
+          this.error(this.peek(), "Cannot have more than 255 arguments.")
+        }
+        args.push(this.expression());
+      } while (this.match(TokenType.COMMA))
+    }
+
+    const paren = this.consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.");
+
+    return new Call(callee, paren, args);
   }
 
   private consume(type: TokenType, message: string) {

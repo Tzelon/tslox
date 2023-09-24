@@ -5,6 +5,7 @@ import type { Expr } from "../src/Expr";
 export interface Visitor<R> {
    visitBlockStmt(stmt: Block): R;
    visitExpressionStmt(stmt: Expression): R;
+   visitFunctionStmt(stmt: Function): R;
    visitIfStmt(stmt: If): R;
    visitPrintStmt(stmt: Print): R;
    visitVarStmt(stmt: Var): R;
@@ -32,6 +33,16 @@ export class Expression extends Stmt {
 
    accept<R>(visitor: Visitor<R>) {
       return visitor.visitExpressionStmt(this);
+   }
+}
+
+export class Function extends Stmt {
+   constructor(public name: Token, public params: Token[], public body: Stmt[],) {
+      super()
+   }
+
+   accept<R>(visitor: Visitor<R>) {
+      return visitor.visitFunctionStmt(this);
    }
 }
 
