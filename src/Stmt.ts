@@ -6,6 +6,7 @@ export interface Visitor<R> {
    visitBlockStmt(stmt: Block): R;
    visitExpressionStmt(stmt: Expression): R;
    visitFunctionStmt(stmt: Function): R;
+   visitReturnStmt(stmt: Return): R;
    visitIfStmt(stmt: If): R;
    visitPrintStmt(stmt: Print): R;
    visitVarStmt(stmt: Var): R;
@@ -43,6 +44,16 @@ export class Function extends Stmt {
 
    accept<R>(visitor: Visitor<R>) {
       return visitor.visitFunctionStmt(this);
+   }
+}
+
+export class Return extends Stmt {
+   constructor(public name: Token, public value: Expr,) {
+      super()
+   }
+
+   accept<R>(visitor: Visitor<R>) {
+      return visitor.visitReturnStmt(this);
    }
 }
 

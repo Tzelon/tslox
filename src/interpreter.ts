@@ -1,8 +1,8 @@
 import * as Lox from "./lox"
 import { Callable } from "./Callable"
 import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical, Call } from "./Expr";
-import { Block, Expression, Function, If, Print, Stmt, Visitor as StmtVisitor, Var, While } from "./Stmt"
-import { RuntimeError } from "./RuntimeError";
+import { Block, Expression, Function, If, Print, Return, Stmt, Visitor as StmtVisitor, Var, While } from "./Stmt"
+import { ReturnException, RuntimeError } from "./RuntimeError";
 import { Token } from "./token";
 import { TokenType } from "./token_type";
 import { Environment } from "./environment";
@@ -38,6 +38,8 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
       if (err instanceof RuntimeError) {
         Lox.runtime_error(err)
       }
+
+      console.error(err)
     }
   }
 
@@ -174,7 +176,7 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
   visitIfStmt(stmt: If): void {
     if (this.is_truthy(this.evaluate(stmt.condition))) {
       this.execute(stmt.thenBranch)
-    } else if (stmt.elseBranch !== undefined || stmt.elseBranch !== null) {
+    } else if (stmt.elseBranch !== undefined && stmt.elseBranch !== null) {
       this.execute(stmt.elseBranch)
     }
 
@@ -206,6 +208,15 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
     this.environment.define(stmt.name.lexeme, func)
 
     return null;
+  }
+
+  visitReturnStmt(stmt: Return): void {
+    let value = null;
+    if (stmt.value !== null) {
+      value = this.evaluate(stmt.value);
+    }
+
+    throw new ReturnException(value);
   }
 
   private assert_number_operand(operator: Token, operand: unknown) {

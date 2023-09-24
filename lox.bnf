@@ -8,8 +8,9 @@ parameters -> IDENTIFIER ( "," IDENTIFIER )* ;
 
 varDecl -> "var IDENTIFIER ( "=" expression )? ";" ;
 
-statement -> exprStmt | printStmt | ifStmt | forStmt | block;
+statement -> exprStmt | printStmt | returnStmt | ifStmt | forStmt | block;
 
+returnStmt -> "return" expression? ";" ;
 forStmt -> "for" "(" (varDecl | exprStmt | ";") expression? ";" expression? ")" statement ;
 whileStmt -> "while" "(" expression ")" statement ; 
 ifStmt -> "if" "(" expression ")" statement ( "else" statement )? ;

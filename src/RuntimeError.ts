@@ -9,3 +9,12 @@ export class RuntimeError extends Error {
     this.token = token;
   }
 }
+
+export class ReturnException extends Error {
+  value: any;
+
+  constructor(value: any) {
+    super();
+    this.value = value;
+  }
+}

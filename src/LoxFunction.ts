@@ -1,4 +1,5 @@
 import { Callable } from "./Callable";
+import { ReturnException, RuntimeError } from "./RuntimeError";
 import { Function } from "./Stmt";
 import { Environment } from "./environment";
 import { Interpreter } from "./interpreter";
@@ -21,7 +22,14 @@ export class LoxFunction extends Callable {
       environment.define(this.declaration.params.at(index).lexeme, args.at(index));
     }
 
-    interpreter.execute_block(this.declaration.body, environment);
+    try {
+      interpreter.execute_block(this.declaration.body, environment);
+    } catch (err) {
+      if (err instanceof ReturnException) {
+        return err.value;
+      }
+      throw err;
+    }
 
     return null;
   }

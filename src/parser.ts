@@ -1,5 +1,5 @@
 import type { Token } from "./token";
-import { Block, Expression, Function, If, Print, Stmt, Var, While } from "./Stmt";
+import { Block, Expression, Function, If, Print, Return, Stmt, Var, While } from "./Stmt";
 import * as Lox from "./lox";
 import { Assign, Binary, Call, Expr, Grouping, Literal, Logical, Unary, Variable } from "./Expr";
 import { TokenType } from "./token_type";
@@ -75,6 +75,7 @@ export class Parser {
     if (this.match(TokenType.FOR)) return this.for_statement();
     if (this.match(TokenType.IF)) return this.if_statement();
     if (this.match(TokenType.PRINT)) return this.print_statement();
+    if (this.match(TokenType.RETURN)) return this.return_statement();
     if (this.match(TokenType.WHILE)) return this.while_statement();
     if (this.match(TokenType.LEFT_BRACE)) return new Block(this.block());
 
@@ -167,6 +168,19 @@ export class Parser {
     const body = this.statement();
 
     return new While(condition, body);
+  }
+
+  private return_statement(): Stmt {
+    const keyword = this.previous();
+
+    let value: Expr = null;
+    if (!this.check(TokenType.SEMICOLON)) {
+      value = this.expression()
+    }
+
+    this.consume(TokenType.SEMICOLON, "Expect ';' after return value.")
+
+    return new Return(keyword, value);
   }
 
   private expression_statement(): Stmt {
