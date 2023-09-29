@@ -25,6 +25,10 @@ export class Environment {
     throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
   }
 
+  get_at(distance: number, name: string) {
+    return this.ancestor(distance).values.get(name);
+  }
+
   assign(name: Token, value: any) {
     if (this.values.has(name.lexeme)) {
       this.values.set(name.lexeme, value)
@@ -37,5 +41,18 @@ export class Environment {
     }
 
     throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
+  }
+
+  assign_at(distance: number, name: Token, value: any) {
+    this.ancestor(distance).values.set(name.lexeme, value);
+  }
+
+  private ancestor(distance: number) {
+    let environment: Environment = this;
+    for (let index = 0; index < distance; index++) {
+      environment = environment.enclosing;
+    }
+
+    return environment;
   }
 }

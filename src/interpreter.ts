@@ -12,6 +12,7 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
 
   globals = new Environment();
   private environment = this.globals;
+  private locals: WeakMap<Expr, number> = new WeakMap();
 
   constructor() {
     this.globals.define("clock", new class extends Callable {
@@ -115,13 +116,20 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
   }
 
   visitVariableExpr(expr: Variable) {
-    return this.environment.get(expr.name);
+    return this.look_up_variable(expr.name, expr)
   }
 
   visitAssignExpr(expr: Assign) {
     const value = this.evaluate(expr.value);
 
-    this.environment.assign(expr.name, value);
+    const distance = this.locals.get(expr);
+
+    if (distance !== undefined) {
+      this.environment.assign_at(distance, expr.name, value);
+    } else {
+      this.globals.assign(expr.name, value);
+    }
+
     return value;
   }
 
@@ -221,6 +229,16 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
     throw new ReturnException(value);
   }
 
+  private look_up_variable(name: Token, expr: Expr) {
+    const distance = this.locals.get(expr);
+
+    if (distance !== undefined) {
+      return this.environment.get_at(distance, name.lexeme);
+    } else {
+      return this.globals.get(name)
+    }
+  }
+
   private assert_number_operand(operator: Token, operand: unknown) {
     if (typeof operand === "number") return;
     throw new RuntimeError(operator, "Operand must be a number.")
@@ -268,6 +286,10 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
 
   private execute(stmt: Stmt) {
     stmt.accept(this);
+  }
+
+  resolve(expr: Expr, depth: number) {
+    this.locals.set(expr, depth);
   }
 
   private stringify(object: any) {
