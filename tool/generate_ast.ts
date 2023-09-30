@@ -12,6 +12,8 @@ function main() {
   define_ast(output_dir, "Expr", [
     "Binary - left: Expr, operator: Token, right: Expr",
     "Call - callee: Expr, paren: Token, args: Expr[]",
+    "Get - obj: Expr, name: Token",
+    "Set - obj: Expr, name: Token, value: Expr",
     "Grouping - expression: Expr",
     "Literal - value: any",
     "Logical - left: Expr, operator: Token, right: Expr",
@@ -22,6 +24,7 @@ function main() {
 
   define_ast(output_dir, "Stmt", [
     "Block - statements: Stmt[]",
+    "Class - name: Token, methods: Function[]",
     "Expression - expression: Expr",
     "Function - name: Token, params: Token[], body: Stmt[]",
     "Return - name: Token, value: Expr",

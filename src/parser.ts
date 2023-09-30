@@ -1,7 +1,7 @@
 import type { Token } from "./token";
-import { Block, Expression, Function, If, Print, Return, Stmt, Var, While } from "./Stmt";
+import { Block, Class, Expression, Function, If, Print, Return, Stmt, Var, While } from "./Stmt";
 import * as Lox from "./lox";
-import { Assign, Binary, Call, Expr, Grouping, Literal, Logical, Unary, Variable } from "./Expr";
+import { Assign, Binary, Call, Expr, Get, Grouping, Literal, Logical, Set, Unary, Variable } from "./Expr";
 import { TokenType } from "./token_type";
 
 export class Parser {
@@ -23,6 +23,7 @@ export class Parser {
 
   private declaration(): Stmt {
     try {
+      if (this.match(TokenType.CLASS)) return this.class_declaration();
       if (this.match(TokenType.FUN)) return this.fun("function");
       if (this.match(TokenType.VAR)) return this.var_declaration();
 
@@ -35,7 +36,7 @@ export class Parser {
     }
   }
 
-  private fun(kind: string) {
+  private fun(kind: "function" | "method") {
     const name = this.consume(TokenType.IDENTIFIER, "Expect " + kind + " name.");
 
     this.consume(TokenType.LEFT_PAREN, "Expect '(' after function name")
@@ -57,6 +58,20 @@ export class Parser {
     const body = this.block();
 
     return new Function(name, params, body);
+  }
+
+  private class_declaration() {
+    const name = this.consume(TokenType.IDENTIFIER, "Expect class name.");
+    this.consume(TokenType.LEFT_BRACE, "Expect '{' before class body.");
+
+    const methods: Function[] = []
+    while (!this.check(TokenType.RIGHT_BRACE) && !this.is_at_end()) {
+      methods.push(this.fun("method"));
+    }
+
+    this.consume(TokenType.RIGHT_BRACE, "Expect '}' after class body");
+
+    return new Class(name, methods)
   }
 
   private var_declaration() {
@@ -203,6 +218,8 @@ export class Parser {
       if (expr instanceof Variable) {
         const name = expr.name;
         return new Assign(name, value);
+      } else if (expr instanceof Get) {
+        return new Set(expr.obj, expr.name, value);
       }
 
       this.error(equals, "Invalid assignment target.");
@@ -298,6 +315,9 @@ export class Parser {
     while (true) {
       if (this.match(TokenType.LEFT_PAREN)) {
         expr = this.finish_call(expr)
+      } else if (this.match(TokenType.DOT)) {
+        const name = this.consume(TokenType.IDENTIFIER, "Expect property name after '.'.");
+        expr = new Get(expr, name);
       } else {
         break;
       }

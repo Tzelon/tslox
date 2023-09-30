@@ -4,6 +4,7 @@ import type { Expr } from "../src/Expr";
 
 export interface Visitor<R> {
    visitBlockStmt(stmt: Block): R;
+   visitClassStmt(stmt: Class): R;
    visitExpressionStmt(stmt: Expression): R;
    visitFunctionStmt(stmt: Function): R;
    visitReturnStmt(stmt: Return): R;
@@ -24,6 +25,16 @@ export class Block extends Stmt {
 
    accept<R>(visitor: Visitor<R>) {
       return visitor.visitBlockStmt(this);
+   }
+}
+
+export class Class extends Stmt {
+   constructor(public name: Token, public methods: Function[],) {
+      super()
+   }
+
+   accept<R>(visitor: Visitor<R>) {
+      return visitor.visitClassStmt(this);
    }
 }
 

@@ -1,10 +1,7 @@
-var a = "global";
-{
-  fun showA() {
-    print a;
+class Tzelon {
+  say_hi() {
+    return "hey from class";
   }
-
-  showA();
-  var a = "block";
-  showA();
 }
+var t = Tzelon();
+print t.say_hi();

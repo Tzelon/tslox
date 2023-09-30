@@ -1,12 +1,14 @@
 import * as Lox from "./lox"
 import { Callable } from "./Callable"
-import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical, Call } from "./Expr";
-import { Block, Expression, Function, If, Print, Return, Stmt, Visitor as StmtVisitor, Var, While } from "./Stmt"
+import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical, Call, Get, Set } from "./Expr";
+import { Block, Class, Expression, Function, If, Print, Return, Stmt, Visitor as StmtVisitor, Var, While } from "./Stmt"
 import { ReturnException, RuntimeError } from "./RuntimeError";
 import { Token } from "./token";
 import { TokenType } from "./token_type";
 import { Environment } from "./environment";
 import { LoxFunction } from "./LoxFunction";
+import { LoxClass } from "./LoxClass";
+import { LoxInstance } from "./LoxInstance";
 
 export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
 
@@ -154,6 +156,28 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
     return func.call(this, args);
   }
 
+  visitGetExpr(expr: Get) {
+    const obj = this.evaluate(expr.obj);
+    if (obj instanceof LoxInstance) {
+      return obj.get(expr.name);
+    }
+
+    throw new RuntimeError(expr.name, "Only instances have properties.");
+  }
+
+  visitSetExpr(expr: Set) {
+    const obj = this.evaluate(expr.obj);
+
+    if (!(obj instanceof LoxInstance)) {
+      throw new RuntimeError(expr.name, "Only instances have fields.");
+    }
+
+    const value = this.evaluate(expr.value);
+    obj.set(expr.name, value);
+
+    return value;
+  }
+
   visitExpressionStmt(stmt: Expression): void {
     this.evaluate(stmt.expression);
     return undefined
@@ -209,6 +233,23 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
     }
 
     return null
+  }
+
+  visitClassStmt(stmt: Class): void {
+    this.environment.define(stmt.name.lexeme, null);
+
+    const methods: Map<string, LoxFunction> = new Map();
+
+    for (const method of stmt.methods) {
+      const func = new LoxFunction(method, this.environment);
+      methods.set(method.name.lexeme, func);
+
+    }
+
+    const klass = new LoxClass(stmt.name.lexeme, methods);
+    this.environment.assign(stmt.name, klass);
+
+    return null;
   }
 
   visitFunctionStmt(stmt: Function): void {

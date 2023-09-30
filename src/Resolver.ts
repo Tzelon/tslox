@@ -1,12 +1,13 @@
 import * as Lox from "./lox"
-import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical, Call } from "./Expr";
-import { Block, Expression, Function, If, Print, Return, Stmt, Visitor as StmtVisitor, Var, While } from "./Stmt"
+import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical, Call, Get, Set } from "./Expr";
+import { Block, Class, Expression, Function, If, Print, Return, Stmt, Visitor as StmtVisitor, Var, While } from "./Stmt"
 import { Interpreter } from "./interpreter";
 import { Token } from "./token";
 
 enum FunctionType {
   NONE,
-  FUNCTION
+  FUNCTION,
+  METHOD
 }
 
 export class Resolver implements ExprVisitor<any>, StmtVisitor<void> {
@@ -87,12 +88,39 @@ export class Resolver implements ExprVisitor<any>, StmtVisitor<void> {
     return null;
   }
 
+
+  visitClassStmt(stmt: Class): void {
+    this.declare(stmt.name);
+    this.define(stmt.name);
+
+    for (const method of stmt.methods) {
+      const declaration = FunctionType.METHOD;
+
+      this.resolve_function(method, declaration)
+    }
+
+    return null;
+  }
+
   visitVariableExpr(expr: Variable) {
-    if (this.scopes.length === 0 && this.scopes.at(-1).get(expr.name.lexeme) === false) {
+    if (this.scopes.length === 0 && this.scopes.at(-1)?.get(expr.name.lexeme) === false) {
       Lox.error(expr.name, "Cannot read local Variable in its own initializer.")
     }
 
     this.resolve_local(expr, expr.name);
+
+    return null;
+  }
+
+  visitGetExpr(expr: Get) {
+    this.resolve(expr.obj);
+
+    return null;
+  }
+
+  visitSetExpr(expr: Set) {
+    this.resolve(expr.value);
+    this.resolve(expr.obj);
 
     return null;
   }
