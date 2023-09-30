@@ -5,6 +5,7 @@ export interface Visitor<R> {
    visitCallExpr(expr: Call): R;
    visitGetExpr(expr: Get): R;
    visitSetExpr(expr: Set): R;
+   visitThisExpr(expr: This): R;
    visitGroupingExpr(expr: Grouping): R;
    visitLiteralExpr(expr: Literal): R;
    visitLogicalExpr(expr: Logical): R;
@@ -18,8 +19,8 @@ export abstract class Expr {
 }
 
 export class Binary extends Expr {
-   constructor(public left: Expr, public operator: Token, public right: Expr,) {
-      super()
+   constructor(public left: Expr, public operator: Token, public right: Expr, ) {
+     super()
    }
 
    accept<R>(visitor: Visitor<R>) {
@@ -28,8 +29,8 @@ export class Binary extends Expr {
 }
 
 export class Call extends Expr {
-   constructor(public callee: Expr, public paren: Token, public args: Expr[],) {
-      super()
+   constructor(public callee: Expr, public paren: Token, public args: Expr[], ) {
+     super()
    }
 
    accept<R>(visitor: Visitor<R>) {
@@ -38,8 +39,8 @@ export class Call extends Expr {
 }
 
 export class Get extends Expr {
-   constructor(public obj: Expr, public name: Token,) {
-      super()
+   constructor(public obj: Expr, public name: Token, ) {
+     super()
    }
 
    accept<R>(visitor: Visitor<R>) {
@@ -48,8 +49,8 @@ export class Get extends Expr {
 }
 
 export class Set extends Expr {
-   constructor(public obj: Expr, public name: Token, public value: Expr,) {
-      super()
+   constructor(public obj: Expr, public name: Token, public value: Expr, ) {
+     super()
    }
 
    accept<R>(visitor: Visitor<R>) {
@@ -57,9 +58,19 @@ export class Set extends Expr {
    }
 }
 
+export class This extends Expr {
+   constructor(public keyword: Token, ) {
+     super()
+   }
+
+   accept<R>(visitor: Visitor<R>) {
+      return visitor.visitThisExpr(this);
+   }
+}
+
 export class Grouping extends Expr {
-   constructor(public expression: Expr,) {
-      super()
+   constructor(public expression: Expr, ) {
+     super()
    }
 
    accept<R>(visitor: Visitor<R>) {
@@ -68,8 +79,8 @@ export class Grouping extends Expr {
 }
 
 export class Literal extends Expr {
-   constructor(public value: any,) {
-      super()
+   constructor(public value: any, ) {
+     super()
    }
 
    accept<R>(visitor: Visitor<R>) {
@@ -78,8 +89,8 @@ export class Literal extends Expr {
 }
 
 export class Logical extends Expr {
-   constructor(public left: Expr, public operator: Token, public right: Expr,) {
-      super()
+   constructor(public left: Expr, public operator: Token, public right: Expr, ) {
+     super()
    }
 
    accept<R>(visitor: Visitor<R>) {
@@ -88,8 +99,8 @@ export class Logical extends Expr {
 }
 
 export class Unary extends Expr {
-   constructor(public operator: Token, public right: Expr,) {
-      super()
+   constructor(public operator: Token, public right: Expr, ) {
+     super()
    }
 
    accept<R>(visitor: Visitor<R>) {
@@ -98,8 +109,8 @@ export class Unary extends Expr {
 }
 
 export class Variable extends Expr {
-   constructor(public name: Token,) {
-      super()
+   constructor(public name: Token, ) {
+     super()
    }
 
    accept<R>(visitor: Visitor<R>) {
@@ -108,8 +119,8 @@ export class Variable extends Expr {
 }
 
 export class Assign extends Expr {
-   constructor(public name: Token, public value: Expr,) {
-      super()
+   constructor(public name: Token, public value: Expr, ) {
+     super()
    }
 
    accept<R>(visitor: Visitor<R>) {

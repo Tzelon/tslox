@@ -14,6 +14,7 @@ function main() {
     "Call - callee: Expr, paren: Token, args: Expr[]",
     "Get - obj: Expr, name: Token",
     "Set - obj: Expr, name: Token, value: Expr",
+    "This - keyword: Token",
     "Grouping - expression: Expr",
     "Literal - value: any",
     "Logical - left: Expr, operator: Token, right: Expr",

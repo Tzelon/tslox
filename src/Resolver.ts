@@ -1,5 +1,5 @@
 import * as Lox from "./lox"
-import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical, Call, Get, Set } from "./Expr";
+import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical, Call, Get, Set, This } from "./Expr";
 import { Block, Class, Expression, Function, If, Print, Return, Stmt, Visitor as StmtVisitor, Var, While } from "./Stmt"
 import { Interpreter } from "./interpreter";
 import { Token } from "./token";
@@ -7,13 +7,20 @@ import { Token } from "./token";
 enum FunctionType {
   NONE,
   FUNCTION,
+  INITIALIZER,
   METHOD
+}
+
+enum ClassType {
+  NONE,
+  CLASS
 }
 
 export class Resolver implements ExprVisitor<any>, StmtVisitor<void> {
   interpreter: Interpreter;
   scopes: Map<string, boolean>[] = [];
   current_function = FunctionType.NONE;
+  current_class = ClassType.NONE;
 
   constructor(interpreter: Interpreter) {
     this.interpreter = interpreter;
@@ -64,6 +71,9 @@ export class Resolver implements ExprVisitor<any>, StmtVisitor<void> {
       Lox.error(stmt.name, "Can't return from top-level code.")
     }
     if (stmt.value !== null && stmt.value !== undefined) {
+      if (this.current_function === FunctionType.INITIALIZER) {
+        Lox.error(stmt.name, "Can't return from an initializer.")
+      }
       this.resolve(stmt.value);
     }
 
@@ -90,14 +100,26 @@ export class Resolver implements ExprVisitor<any>, StmtVisitor<void> {
 
 
   visitClassStmt(stmt: Class): void {
+    const enclosing_class = this.current_class;
+    this.current_class = ClassType.CLASS;
+
     this.declare(stmt.name);
     this.define(stmt.name);
 
+    this.begin_scope();
+    this.scopes.at(-1).set("this", true);
+
     for (const method of stmt.methods) {
-      const declaration = FunctionType.METHOD;
+      let declaration = FunctionType.METHOD;
+      if (method.name.lexeme === "init") {
+        declaration = FunctionType.INITIALIZER
+      }
 
       this.resolve_function(method, declaration)
     }
+
+    this.end_scope();
+    this.current_class = enclosing_class;
 
     return null;
   }
@@ -168,6 +190,16 @@ export class Resolver implements ExprVisitor<any>, StmtVisitor<void> {
 
   visitUnaryExpr(expr: Unary) {
     this.resolve(expr.right);
+
+    return null;
+  }
+
+  visitThisExpr(expr: This) {
+    if (this.current_class === ClassType.NONE) {
+      Lox.error(expr.keyword, "Can't use 'this' outside of a class.")
+    }
+
+    this.resolve_local(expr, expr.keyword);
 
     return null;
   }

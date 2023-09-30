@@ -1,6 +1,6 @@
 import * as Lox from "./lox"
 import { Callable } from "./Callable"
-import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical, Call, Get, Set } from "./Expr";
+import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical, Call, Get, Set, This } from "./Expr";
 import { Block, Class, Expression, Function, If, Print, Return, Stmt, Visitor as StmtVisitor, Var, While } from "./Stmt"
 import { ReturnException, RuntimeError } from "./RuntimeError";
 import { Token } from "./token";
@@ -241,7 +241,7 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
     const methods: Map<string, LoxFunction> = new Map();
 
     for (const method of stmt.methods) {
-      const func = new LoxFunction(method, this.environment);
+      const func = new LoxFunction(method, this.environment, method.name.lexeme === "init");
       methods.set(method.name.lexeme, func);
 
     }
@@ -252,10 +252,14 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
     return null;
   }
 
+  visitThisExpr(expr: This) {
+    return this.look_up_variable(expr.keyword, expr);
+  }
+
   visitFunctionStmt(stmt: Function): void {
     //passing the environment that is active when the function is declared.
     // NOT when it's called
-    const func = new LoxFunction(stmt, this.environment);
+    const func = new LoxFunction(stmt, this.environment, false);
     this.environment.define(stmt.name.lexeme, func)
 
     return null;
