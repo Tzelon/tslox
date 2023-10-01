@@ -1,6 +1,6 @@
 import * as Lox from "./lox"
 import { Callable } from "./Callable"
-import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical, Call, Get, Set, This } from "./Expr";
+import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical, Call, Get, Set, This, Super } from "./Expr";
 import { Block, Class, Expression, Function, If, Print, Return, Stmt, Visitor as StmtVisitor, Var, While } from "./Stmt"
 import { ReturnException, RuntimeError } from "./RuntimeError";
 import { Token } from "./token";
@@ -236,20 +236,50 @@ export class Interpreter implements ExprVisitor<any>, StmtVisitor<void> {
   }
 
   visitClassStmt(stmt: Class): void {
+    let superclass = null;
+    if (stmt.superclass) {
+      superclass = this.evaluate(stmt.superclass);
+      if (!(superclass instanceof LoxClass)) {
+        throw new RuntimeError(stmt.superclass.name, "superclass must be a class.");
+      }
+    }
+
     this.environment.define(stmt.name.lexeme, null);
+    if (stmt.superclass) {
+      this.environment = new Environment(this.environment);
+      this.environment.define("super", superclass);
+    }
 
     const methods: Map<string, LoxFunction> = new Map();
 
     for (const method of stmt.methods) {
       const func = new LoxFunction(method, this.environment, method.name.lexeme === "init");
       methods.set(method.name.lexeme, func);
-
     }
 
-    const klass = new LoxClass(stmt.name.lexeme, methods);
+    const klass = new LoxClass(stmt.name.lexeme, superclass, methods);
+
+    if (superclass) {
+      this.environment = this.environment.enclosing;
+    }
+
     this.environment.assign(stmt.name, klass);
 
     return null;
+  }
+
+  visitSuperExpr(expr: Super) {
+    const distance = this.locals.get(expr);
+
+    const superclass = this.environment.get_at(distance, "super") as LoxClass;
+    const obj = this.environment.get_at(distance - 1, "this") as LoxInstance;
+    const method = superclass.find_method(expr.method.lexeme);
+
+    if (!method) {
+      throw new RuntimeError(expr.method, "Undefined property '" + expr.method.lexeme + "'.");
+    }
+
+    return method.bind(obj);
   }
 
   visitThisExpr(expr: This) {

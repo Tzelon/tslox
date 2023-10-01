@@ -1,5 +1,5 @@
 import * as Lox from "./lox"
-import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical, Call, Get, Set, This } from "./Expr";
+import { Binary, Expr, Grouping, Literal, Unary, Visitor as ExprVisitor, Variable, Assign, Logical, Call, Get, Set, This, Super } from "./Expr";
 import { Block, Class, Expression, Function, If, Print, Return, Stmt, Visitor as StmtVisitor, Var, While } from "./Stmt"
 import { Interpreter } from "./interpreter";
 import { Token } from "./token";
@@ -13,7 +13,8 @@ enum FunctionType {
 
 enum ClassType {
   NONE,
-  CLASS
+  CLASS,
+  SUBCLASS
 }
 
 export class Resolver implements ExprVisitor<any>, StmtVisitor<void> {
@@ -106,6 +107,21 @@ export class Resolver implements ExprVisitor<any>, StmtVisitor<void> {
     this.declare(stmt.name);
     this.define(stmt.name);
 
+
+    if (stmt.superclass && stmt.name.lexeme === stmt.superclass.name.lexeme) {
+      Lox.error(stmt.superclass.name, "A c;ass can't inherit from itself.");
+    }
+
+    if (stmt.superclass) {
+      this.current_class = ClassType.SUBCLASS;
+      this.resolve(stmt.superclass);
+    }
+
+    if (stmt.superclass) {
+      this.begin_scope();
+      this.scopes.at(-1).set("super", true);
+    }
+
     this.begin_scope();
     this.scopes.at(-1).set("this", true);
 
@@ -119,7 +135,20 @@ export class Resolver implements ExprVisitor<any>, StmtVisitor<void> {
     }
 
     this.end_scope();
+
+    if (stmt.superclass) { this.end_scope(); }
     this.current_class = enclosing_class;
+
+    return null;
+  }
+
+  visitSuperExpr(expr: Super) {
+    if (this.current_class === ClassType.NONE) {
+      Lox.error(expr.keyword, "Can't use 'super' outside of a class.");
+    } else if (this.current_class !== ClassType.SUBCLASS) {
+      Lox.error(expr.keyword, "Can't use 'super' in a class with no superclass.");
+    }
+    this.resolve_local(expr, expr.keyword);
 
     return null;
   }

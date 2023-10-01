@@ -1,6 +1,6 @@
 import type { Token } from "../src/token";
 
-import type { Expr } from "../src/Expr";
+import type { Expr, Variable } from "../src/Expr";
 
 export interface Visitor<R> {
    visitBlockStmt(stmt: Block): R;
@@ -29,7 +29,7 @@ export class Block extends Stmt {
 }
 
 export class Class extends Stmt {
-   constructor(public name: Token, public methods: Function[], ) {
+   constructor(public name: Token, public superclass: Variable, public methods: Function[], ) {
      super()
    }
 

@@ -15,6 +15,7 @@ function main() {
     "Get - obj: Expr, name: Token",
     "Set - obj: Expr, name: Token, value: Expr",
     "This - keyword: Token",
+    "Super - keyword: Token, method: Token",
     "Grouping - expression: Expr",
     "Literal - value: any",
     "Logical - left: Expr, operator: Token, right: Expr",
@@ -25,7 +26,7 @@ function main() {
 
   define_ast(output_dir, "Stmt", [
     "Block - statements: Stmt[]",
-    "Class - name: Token, methods: Function[]",
+    "Class - name: Token, superclass: Variable, methods: Function[]",
     "Expression - expression: Expr",
     "Function - name: Token, params: Token[], body: Stmt[]",
     "Return - name: Token, value: Expr",
@@ -44,7 +45,7 @@ function define_ast(output_dir: string, base_name: string, types: string[]) {
   code.push(`import type { Token } from "../src/token";\n\n`)
 
   if (base_name === "Stmt") {
-    code.push(`import type { Expr } from "../src/Expr";\n\n`)
+    code.push(`import type { Expr, Variable } from "../src/Expr";\n\n`)
   }
 
   define_visitor_interface(code, base_name, types);

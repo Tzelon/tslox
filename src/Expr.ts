@@ -6,6 +6,7 @@ export interface Visitor<R> {
    visitGetExpr(expr: Get): R;
    visitSetExpr(expr: Set): R;
    visitThisExpr(expr: This): R;
+   visitSuperExpr(expr: Super): R;
    visitGroupingExpr(expr: Grouping): R;
    visitLiteralExpr(expr: Literal): R;
    visitLogicalExpr(expr: Logical): R;
@@ -65,6 +66,16 @@ export class This extends Expr {
 
    accept<R>(visitor: Visitor<R>) {
       return visitor.visitThisExpr(this);
+   }
+}
+
+export class Super extends Expr {
+   constructor(public keyword: Token, public method: Token, ) {
+     super()
+   }
+
+   accept<R>(visitor: Visitor<R>) {
+      return visitor.visitSuperExpr(this);
    }
 }
 

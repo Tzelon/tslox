@@ -7,11 +7,13 @@ import { Interpreter } from "./interpreter";
 export class LoxClass extends Callable {
   name: string;
   methods: Map<string, LoxFunction>;
+  superclass: LoxClass;
 
-  constructor(name: string, methods: Map<string, LoxFunction>) {
+  constructor(name: string, superclass: LoxClass, methods: Map<string, LoxFunction>) {
     super()
     this.methods = methods
     this.name = name;
+    this.superclass = superclass;
   }
 
   call(interpreter: Interpreter, args: unknown[]): unknown {
@@ -35,6 +37,10 @@ export class LoxClass extends Callable {
   find_method(name: string): LoxFunction | null {
     if (this.methods.has(name)) {
       return this.methods.get(name)
+    }
+
+    if (this.superclass) {
+      return this.superclass.find_method(name);
     }
 
     return null;
